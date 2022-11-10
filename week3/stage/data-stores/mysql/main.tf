@@ -1,0 +1,50 @@
+resource "aws_db_subnet_group" "mydbsubnet" {
+  name       = "mydbsubnetgroup"
+  subnet_ids = [aws_subnet.mysubnet3.id, aws_subnet.mysubnet4.id]
+
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
+
+resource "random_password" "db_password10" {
+  length  = 16
+  special = true
+  numeric = true
+  upper   = true
+  lower   = true
+}
+
+resource "aws_secretsmanager_secret" "example10" {
+  name = "secretmgmt10"
+}
+
+resource "aws_secretsmanager_secret_version" "secretdb10" {
+  secret_id = aws_secretsmanager_secret.example10.id
+  secret_string = random_password.db_password10.result
+}
+
+data "aws_secretsmanager_secret" "example10" {
+  arn = aws_secretsmanager_secret.example10.arn
+  depends_on = [aws_secretsmanager_secret.example10]
+}
+
+data "aws_secretsmanager_secret_version" "secretdb10" {
+  secret_id = data.aws_secretsmanager_secret.example10.id
+  depends_on = [aws_secretsmanager_secret_version.secretdb10]
+}
+
+resource "aws_db_instance" "myrds" {
+  identifier_prefix      = "t101"
+  engine                 = "mysql"
+  allocated_storage      = 10
+  instance_class         = "db.t2.micro"
+  db_subnet_group_name   = aws_db_subnet_group.mydbsubnet.name
+  vpc_security_group_ids = [aws_security_group.mysg2.id]
+  skip_final_snapshot    = true
+
+  db_name                = var.db_name
+  username               = var.db_username
+  password               = data.aws_secretsmanager_secret_version.secretdb10.secret_string
+
+}
