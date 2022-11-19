@@ -1,6 +1,4 @@
-      for key,value in var.egress:
-      key => value
-      if key != "ssh"resource "aws_vpc" "myvpc" {
+resource "aws_vpc" "myvpc" {
   cidr_block = "10.10.10.0/24"
 }
 
@@ -12,8 +10,8 @@ resource "aws_security_group" "dynamic_test" {
     for_each = {
       for key,value in var.egress:
       key => value
-      if key != "ssh"  
-   } 
+      if key != "ssh"
+    }
 
     content {
       from_port   = egress.value["from_port"]
@@ -23,4 +21,3 @@ resource "aws_security_group" "dynamic_test" {
     }
   }
 }
-
